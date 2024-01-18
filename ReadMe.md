@@ -8,6 +8,14 @@ Sqlite-Worker is a Python package providing a thread-safe interface for SQLite d
 * Simple and easy-to-use API
 
 
+# Installation
+
+To install do the following: 
+
+``` 
+pip3 install sqlite-worker
+```
+
 
 # Creating a Worker Instance
 Create an instance of Sqlite3Worker by specifying the path to your SQLite database file:
