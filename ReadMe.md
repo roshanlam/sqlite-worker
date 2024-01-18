@@ -21,7 +21,8 @@ pip3 install sqlite-worker
 Create an instance of Sqlite3Worker by specifying the path to your SQLite database file:
 
 ```python
-worker = Sqlite3Worker("/path/to/your/database.db")
+from sqlite_worker import SqliteWorker
+worker = SqliteWorker("/path/to/your/database.db")
 ```
 
 # Execute Queries

@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: sqlite-worker
-Version: 0.0.1
+Version: 0.0.2
 Summary: Thread-safe SQLite3 worker for Python
 Home-page: https://github.com/roshanlam/sqlite-worker
 Author: Roshan Lamichhane
@@ -21,6 +21,14 @@ Sqlite-Worker is a Python package providing a thread-safe interface for SQLite d
 * Queue-based query execution
 * Simple and easy-to-use API
 
+
+# Installation
+
+To install do the following: 
+
+``` 
+pip3 install sqlite-worker
+```
 
 
 # Creating a Worker Instance

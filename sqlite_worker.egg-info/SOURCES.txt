@@ -1,6 +1,6 @@
 setup.py
-sqlite-worker/__init__.py
-sqlite-worker/main.py
+sqlite_worker/__init__.py
+sqlite_worker/main.py
 sqlite_worker.egg-info/PKG-INFO
 sqlite_worker.egg-info/SOURCES.txt
 sqlite_worker.egg-info/dependency_links.txt

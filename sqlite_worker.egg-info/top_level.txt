@@ -1,1 +1,1 @@
-sqlite-worker
+sqlite_worker
