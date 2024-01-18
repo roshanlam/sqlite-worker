@@ -52,6 +52,7 @@ class SqliteWorker:
         except sqlite3.Error as err:
             LOGGER.error("Query error: %s: %s: %s", query, values, err)
             self._handle_query_error(token, err)
+            raise
 
     def _notify_query_done(self, token):
         self._select_events.setdefault(token, threading.Event()).set()
