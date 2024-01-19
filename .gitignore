@@ -1,0 +1,4 @@
+__pycache__/
+dist/
+sqlite_worker.egg-info/
+build/

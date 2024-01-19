@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="sqlite-worker",
-    version="0.0.2",
+    version="0.0.3",
     packages=find_packages(),
     description="Thread-safe SQLite3 worker for Python",
     long_description=open('ReadMe.md').read(),
