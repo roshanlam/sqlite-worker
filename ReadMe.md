@@ -86,3 +86,8 @@ worker.close()
 
 # Contributing
 Contributions to the Sqlite-Worker are welcome! Please refer to the project's issues and pull request sections for contributions.
+
+# Acknowledgements
+
+Special thanks to [Johannes Ahlmann](https://github.com/codinguncut) for their valuable suggestion on initializing actions and implementing regular commits.
+
