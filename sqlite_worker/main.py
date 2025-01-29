@@ -53,6 +53,7 @@ class SqliteWorker:
 
     def _execute_query(self, cursor, token, query, values):
         try:
+            self._notify_query_begin(token)
             cursor.execute(query, values)
             if self._is_select_query(query):
                 with self._lock:
@@ -65,8 +66,11 @@ class SqliteWorker:
     def _is_select_query(self, query):
         return query.lower().lstrip().startswith("select")
 
+    def _notify_query_begin(self, token):
+        self._select_events.setdefault(token, threading.Event())
+
     def _notify_query_done(self, token):
-        self._select_events.setdefault(token, threading.Event()).set()
+        self._select_events.get[token].set()
 
     def _handle_query_error(self, token, err):
         with self._lock:
