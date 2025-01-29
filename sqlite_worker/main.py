@@ -52,16 +52,16 @@ class SqliteWorker:
                     conn.commit()
 
     def _execute_query(self, cursor, token, query, values):
+        self._notify_query_begin(token)
         try:
-            self._notify_query_begin(token)
             cursor.execute(query, values)
             if self._is_select_query(query):
                 with self._lock:
                     self._results[token] = cursor.fetchall()
-            self._notify_query_done(token)
         except sqlite3.Error as err:
             LOGGER.error("Query error: %s: %s: %s", query, values, err)
             self._handle_query_error(token, err)
+        self._notify_query_done(token)
 
     def _is_select_query(self, query):
         return query.lower().lstrip().startswith("select")
@@ -70,12 +70,11 @@ class SqliteWorker:
         self._select_events.setdefault(token, threading.Event())
 
     def _notify_query_done(self, token):
-        self._select_events.get[token].set()
+        self._select_events[token].set()
 
     def _handle_query_error(self, token, err):
         with self._lock:
             self._results[token] = err
-        self._notify_query_done(token)
 
     def close(self):
         self._close_event.set()
