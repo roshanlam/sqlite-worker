@@ -52,7 +52,6 @@ class SqliteWorker:
                     conn.commit()
 
     def _execute_query(self, cursor, token, query, values):
-        self._notify_query_begin(token)
         try:
             cursor.execute(query, values)
             if self._is_select_query(query):
@@ -86,6 +85,7 @@ class SqliteWorker:
             raise RuntimeError("Worker is closed")
         token = str(uuid.uuid4())
         self._sql_queue.put((token, query, values or []), timeout=5)
+        self._notify_query_begin(token)
         return token if self._is_select_query(query) else None
 
     def fetch_results(self, token):
