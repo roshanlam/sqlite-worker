@@ -5,6 +5,7 @@ import uuid
 import queue
 
 LOGGER = logging.getLogger("SqliteWorker")
+SILENT_TOKEN_SUFFIX = '-silent'
 
 
 class SqliteWorker:
@@ -14,6 +15,7 @@ class SqliteWorker:
         self._file_name = file_name
         self._sql_queue = queue.Queue(maxsize=max_queue_size)
         self._results = {}
+        self._tokens = set()
         self._select_events = {}
         self._lock = threading.Lock()
         self._close_event = threading.Event()
@@ -51,10 +53,10 @@ class SqliteWorker:
                     count = 0
                     conn.commit()
 
-    def _execute_query(self, cursor, token, query, values):
+    def _execute_query(self, cursor, token: str, query, values):
         try:
             cursor.execute(query, values)
-            if self._is_select_query(query):
+            if not token.endswith(SILENT_TOKEN_SUFFIX):
                 with self._lock:
                     self._results[token] = cursor.fetchall()
         except sqlite3.Error as err:
@@ -80,13 +82,25 @@ class SqliteWorker:
         self._sql_queue.put((None, None, None), timeout=5)
         self._thread.join()
 
-    def execute(self, query, values=None):
+    def execute(self, query, values=None, always_return_token=False):
         if self._close_event.is_set():
             raise RuntimeError("Worker is closed")
-        token = str(uuid.uuid4())
+
+        return_token = (
+            always_return_token or
+            self._is_select_query(query)
+        )
+
+        token = uuid.uuid4().hex
+        if not return_token:
+            token += SILENT_TOKEN_SUFFIX
+
         self._sql_queue.put((token, query, values or []), timeout=5)
         self._notify_query_begin(token)
-        return token if self._is_select_query(query) else None
+
+        if return_token:
+            return token
+        return None
 
     def fetch_results(self, token):
         if token:
