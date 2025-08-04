@@ -5,3 +5,4 @@ build/
 .coverage
 htmlcov/
 sqlite_worker/__pycache__/
+venv

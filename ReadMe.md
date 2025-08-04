@@ -18,6 +18,8 @@ To install, run:
 pip3 install sqlite-worker
 ```
 
+## Sqlite vs SqliteWorker Comparison
+![](sqlite_performance_comparison.png)
 
 # Creating a Worker Instance
 To create a basic instance of Sqlite3Worker by specifying the path to your SQLite database file:
@@ -72,7 +74,7 @@ worker.execute("INSERT INTO example (name) VALUES (?)", ("Alice",))
 ```
 
 ## Fetching data
-```python 
+```python
 token = worker.execute("SELECT * FROM example")
 results = worker.fetch_results(token)
 print(results)
@@ -90,4 +92,3 @@ Contributions to the Sqlite-Worker are welcome! Please refer to the project's is
 # Acknowledgements
 
 Special thanks to [Johannes Ahlmann](https://github.com/codinguncut) for their valuable suggestion on initializing actions and implementing regular commits.
-
