@@ -92,7 +92,7 @@ class SqliteWorker:
         )
 
         token = uuid.uuid4().hex
-        if not return_token:
+        if return_token is None:
             token += SILENT_TOKEN_SUFFIX
 
         self._sql_queue.put((token, query, values or []), timeout=5)
@@ -102,15 +102,20 @@ class SqliteWorker:
             return token
         return None
 
+
+    def execute_and_fetch(self, query, values=None):
+        return self.fetch_results(self.execute(query, values))
+
     def fetch_results(self, token):
-        if token:
-            with self._lock:
-                event = self._select_events.get(token)
-            if event:
-                event.wait()
-                with self._lock:
-                    return self._results.pop(token, None)
-        return None
+        if token is None:
+            return
+        with self._lock:
+            event = self._select_events.get(token)
+        if event is None:
+            return
+        event.wait()
+        with self._lock:
+            return self._results.pop(token, None)
 
     @property
     def queue_size(self):
