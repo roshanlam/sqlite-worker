@@ -20,6 +20,9 @@ pip install flask sqlite-worker
 
 ```bash
 python app.py
+
+# Or with debug mode for development
+FLASK_DEBUG=true python app.py
 ```
 
 Visit `http://localhost:5000` in your browser.

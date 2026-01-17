@@ -265,4 +265,7 @@ if __name__ == '__main__':
     print("  POST /api/posts/:id/comments - Add comment")
     print("\n" + "=" * 60)
     
-    app.run(debug=True, port=5000)
+    # Use debug=False for production, set via environment variable for development
+    import os
+    debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+    app.run(debug=debug_mode, port=5000)
