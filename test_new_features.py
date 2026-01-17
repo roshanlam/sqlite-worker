@@ -405,5 +405,77 @@ class TestAutoReconnection(unittest.TestCase):
         self.assertEqual(results[0][1], "test_value")
 
 
+class TestInputValidation(unittest.TestCase):
+    """Test SQL injection protection and input validation."""
+    
+    def setUp(self):
+        self.db_file = 'test_validation.db'
+        self.worker = SqliteWorker(self.db_file)
+        time.sleep(0.5)
+        
+        # Create test table
+        self.worker.execute("""
+            CREATE TABLE IF NOT EXISTS test_table (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT
+            )
+        """)
+        time.sleep(0.5)
+    
+    def tearDown(self):
+        self.worker.close()
+        if os.path.exists(self.db_file):
+            os.remove(self.db_file)
+    
+    def test_invalid_table_name_insert(self):
+        """Test that invalid table names are rejected in insert."""
+        with self.assertRaises(ValueError):
+            self.worker.insert('users; DROP TABLE test_table; --', {'name': 'test'})
+    
+    def test_invalid_column_name_insert(self):
+        """Test that invalid column names are rejected in insert."""
+        with self.assertRaises(ValueError):
+            self.worker.insert('test_table', {'na"me': 'test'})
+    
+    def test_invalid_table_name_select(self):
+        """Test that invalid table names are rejected in select."""
+        with self.assertRaises(ValueError):
+            self.worker.select('test_table; DROP TABLE test_table; --')
+    
+    def test_invalid_column_name_select(self):
+        """Test that invalid column names are rejected in select."""
+        with self.assertRaises(ValueError):
+            self.worker.select('test_table', columns=['id', 'na"me'])
+    
+    def test_invalid_order_by(self):
+        """Test that invalid order_by is rejected."""
+        with self.assertRaises(ValueError):
+            self.worker.select('test_table', order_by='name; DROP TABLE test_table')
+    
+    def test_invalid_limit(self):
+        """Test that invalid limit is rejected."""
+        with self.assertRaises(ValueError):
+            self.worker.select('test_table', limit='10; DROP TABLE test_table')
+    
+    def test_negative_limit(self):
+        """Test that negative limit is rejected."""
+        with self.assertRaises(ValueError):
+            self.worker.select('test_table', limit=-1)
+    
+    def test_valid_identifiers_work(self):
+        """Test that valid identifiers work correctly."""
+        token = self.worker.insert('test_table', {'name': 'Alice'})
+        self.worker.fetch_results(token)
+        time.sleep(0.5)
+        
+        token = self.worker.select('test_table', columns=['id', 'name'], 
+                                   conditions={'name': 'Alice'}, 
+                                   order_by='name ASC', limit=1)
+        results = self.worker.fetch_results(token)
+        
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0][1], 'Alice')
+
+
 if __name__ == '__main__':
     unittest.main()

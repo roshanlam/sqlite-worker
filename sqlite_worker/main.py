@@ -4,10 +4,29 @@ import threading
 import uuid
 import queue
 import time
+import re
 from typing import Dict, List, Tuple, Any, Optional, Callable
 
 LOGGER = logging.getLogger("SqliteWorker")
 SILENT_TOKEN_SUFFIX = '-silent'
+
+
+def _validate_identifier(identifier: str) -> str:
+    """
+    Validate and sanitize SQL identifiers (table/column names).
+    Raises ValueError if identifier is invalid.
+    """
+    if not identifier or not isinstance(identifier, str):
+        raise ValueError("Identifier must be a non-empty string")
+    
+    # Allow alphanumeric, underscore, but must start with letter or underscore
+    if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', identifier):
+        raise ValueError(
+            f"Invalid identifier '{identifier}': must contain only alphanumeric characters "
+            f"and underscores, and start with a letter or underscore"
+        )
+    
+    return identifier
 
 
 class SqliteWorker:
@@ -160,7 +179,9 @@ class SqliteWorker:
         self._select_events.setdefault(token, threading.Event())
 
     def _notify_query_done(self, token):
-        self._select_events[token].set()
+        event = self._select_events.get(token)
+        if event:
+            event.set()
 
     def _handle_query_error(self, token, err):
         with self._lock:
@@ -181,7 +202,7 @@ class SqliteWorker:
         )
 
         token = uuid.uuid4().hex
-        if should_return_token is None:
+        if not should_return_token:
             token += SILENT_TOKEN_SUFFIX
 
         self._sql_queue.put((token, query, values or []), timeout=5)
@@ -256,6 +277,11 @@ class SqliteWorker:
         if not data:
             raise ValueError("Data dictionary cannot be empty")
         
+        # Validate table and column names
+        table_name = _validate_identifier(table_name)
+        for col in data.keys():
+            _validate_identifier(col)
+        
         columns = ", ".join(data.keys())
         placeholders = ", ".join(["?" for _ in data])
         query = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
@@ -281,6 +307,13 @@ class SqliteWorker:
         if not conditions:
             raise ValueError("Conditions dictionary cannot be empty (use with caution)")
         
+        # Validate table and column names
+        table_name = _validate_identifier(table_name)
+        for col in data.keys():
+            _validate_identifier(col)
+        for col in conditions.keys():
+            _validate_identifier(col)
+        
         set_clause = ", ".join([f"{col} = ?" for col in data.keys()])
         where_clause = " AND ".join([f"{col} = ?" for col in conditions.keys()])
         query = f"UPDATE {table_name} SET {set_clause} WHERE {where_clause}"
@@ -302,6 +335,11 @@ class SqliteWorker:
         if not conditions:
             raise ValueError("Conditions dictionary cannot be empty (use with caution)")
         
+        # Validate table and column names
+        table_name = _validate_identifier(table_name)
+        for col in conditions.keys():
+            _validate_identifier(col)
+        
         where_clause = " AND ".join([f"{col} = ?" for col in conditions.keys()])
         query = f"DELETE FROM {table_name} WHERE {where_clause}"
         values = tuple(conditions.values())
@@ -318,25 +356,46 @@ class SqliteWorker:
             table_name: Name of the table
             columns: List of column names to select (defaults to *)
             conditions: Optional dictionary of column names to condition values
-            order_by: Optional ORDER BY clause
-            limit: Optional LIMIT value
+            order_by: Optional ORDER BY clause (e.g., 'column_name ASC')
+            limit: Optional LIMIT value (must be a positive integer)
             
         Returns:
             Token for retrieving results
         """
-        cols = ", ".join(columns) if columns else "*"
+        # Validate table name
+        table_name = _validate_identifier(table_name)
+        
+        # Validate columns if provided
+        if columns:
+            validated_cols = [_validate_identifier(col) for col in columns]
+            cols = ", ".join(validated_cols)
+        else:
+            cols = "*"
+        
         query = f"SELECT {cols} FROM {table_name}"
         values = []
         
         if conditions:
+            # Validate condition column names
+            for col in conditions.keys():
+                _validate_identifier(col)
             where_clause = " AND ".join([f"{col} = ?" for col in conditions.keys()])
             query += f" WHERE {where_clause}"
             values = list(conditions.values())
         
         if order_by:
+            # Validate order_by - allow column names with ASC/DESC
+            order_parts = order_by.strip().split()
+            if len(order_parts) not in [1, 2]:
+                raise ValueError("order_by must be 'column' or 'column ASC/DESC'")
+            _validate_identifier(order_parts[0])
+            if len(order_parts) == 2 and order_parts[1].upper() not in ['ASC', 'DESC']:
+                raise ValueError("order_by direction must be ASC or DESC")
             query += f" ORDER BY {order_by}"
         
-        if limit:
+        if limit is not None:
+            if not isinstance(limit, int) or limit < 0:
+                raise ValueError("limit must be a non-negative integer")
             query += f" LIMIT {limit}"
         
         return self.execute(query, tuple(values))
@@ -405,7 +464,10 @@ class SqliteWorker:
         Args:
             version: Version identifier (e.g., '001', '002')
             name: Human-readable migration name
-            up_sql: SQL to apply for the migration
+            up_sql: SQL to apply for the migration. Multiple statements should be
+                   separated by semicolons. Note: This simple split won't handle
+                   semicolons in strings/comments - for complex migrations, pass
+                   single statements or use executescript manually.
             
         Returns:
             True if migration was applied, False if already applied
@@ -425,17 +487,24 @@ class SqliteWorker:
         try:
             self.begin_transaction()
             
-            # Execute migration SQL
-            for statement in up_sql.split(';'):
-                statement = statement.strip()
-                if statement:
-                    self.execute(statement)
+            # Execute migration SQL - split on semicolons
+            # NOTE: This is a simple split and doesn't handle semicolons in strings/comments
+            # For complex migrations, consider passing single statements or use raw SQL
+            statements = [s.strip() for s in up_sql.split(';') if s.strip()]
+            
+            for statement in statements:
+                token = self.execute(statement)
+                # Wait for statement to complete
+                if token:
+                    self.fetch_results(token)
             
             # Record migration
-            self.execute(
+            token = self.execute(
                 "INSERT INTO _migrations (version, name) VALUES (?, ?)",
                 (version, name)
             )
+            if token:
+                self.fetch_results(token)
             
             self.commit_transaction()
             LOGGER.info("Migration %s (%s) applied successfully", version, name)
@@ -452,7 +521,10 @@ class SqliteWorker:
         
         Args:
             version: Version identifier to rollback
-            down_sql: SQL to rollback the migration
+            down_sql: SQL to rollback the migration. Multiple statements should be
+                     separated by semicolons. Note: This simple split won't handle
+                     semicolons in strings/comments - for complex migrations, pass
+                     single statements or use executescript manually.
             
         Returns:
             True if migration was rolled back, False if not found
@@ -472,17 +544,23 @@ class SqliteWorker:
         try:
             self.begin_transaction()
             
-            # Execute rollback SQL
-            for statement in down_sql.split(';'):
-                statement = statement.strip()
-                if statement:
-                    self.execute(statement)
+            # Execute rollback SQL - split on semicolons
+            # NOTE: This is a simple split and doesn't handle semicolons in strings/comments
+            statements = [s.strip() for s in down_sql.split(';') if s.strip()]
+            
+            for statement in statements:
+                token = self.execute(statement)
+                # Wait for statement to complete
+                if token:
+                    self.fetch_results(token)
             
             # Remove migration record
-            self.execute(
+            token = self.execute(
                 "DELETE FROM _migrations WHERE version = ?",
                 (version,)
             )
+            if token:
+                self.fetch_results(token)
             
             self.commit_transaction()
             LOGGER.info("Migration %s rolled back successfully", version)
