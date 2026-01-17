@@ -1,0 +1,58 @@
+name: Question
+description: Ask a question about using sqlite-worker
+title: "[Question]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question about sqlite-worker? We're here to help!
+        
+        Before asking, please check:
+        - [Documentation](https://github.com/roshanlam/sqlite-worker/blob/main/ReadMe.md)
+        - [Examples](https://github.com/roshanlam/sqlite-worker/tree/main/examples)
+        - [Existing Issues](https://github.com/roshanlam/sqlite-worker/issues)
+        - [Discussions](https://github.com/roshanlam/sqlite-worker/discussions)
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: What would you like to know?
+      placeholder: How do I...? / What is the best way to...?
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Provide context about what you're trying to accomplish
+      placeholder: I'm trying to build... / I want to...
+
+  - type: textarea
+    id: attempts
+    attributes:
+      label: What Have You Tried?
+      description: What solutions have you already attempted?
+      placeholder: I tried...
+
+  - type: textarea
+    id: code
+    attributes:
+      label: Code Sample
+      description: If applicable, share your current code
+      render: python
+      placeholder: |
+        from sqlite_worker import SqliteWorker
+        # Your code...
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I have checked the documentation
+          required: true
+        - label: I have searched existing issues and discussions
+          required: true
