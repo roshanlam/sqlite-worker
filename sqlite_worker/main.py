@@ -86,31 +86,36 @@ class SqliteWorker:
         if self._close_event.is_set():
             raise RuntimeError("Worker is closed")
 
-        return_token = (
+        should_return_token = (
             always_return_token or
             self._is_select_query(query)
         )
 
         token = uuid.uuid4().hex
-        if not return_token:
+        if should_return_token is None:
             token += SILENT_TOKEN_SUFFIX
 
         self._sql_queue.put((token, query, values or []), timeout=5)
         self._notify_query_begin(token)
 
-        if return_token:
+        if should_return_token:
             return token
         return None
 
+
+    def execute_and_fetch(self, query, values=None, always_synchronous=True):
+        return self.fetch_results(self.execute(query, values, always_return_token=always_synchronous))
+
     def fetch_results(self, token):
-        if token:
-            with self._lock:
-                event = self._select_events.get(token)
-            if event:
-                event.wait()
-                with self._lock:
-                    return self._results.pop(token, None)
-        return None
+        if token is None:
+            return
+        with self._lock:
+            event = self._select_events.get(token)
+        if event is None:
+            return
+        event.wait()
+        with self._lock:
+            return self._results.pop(token, None)
 
     @property
     def queue_size(self):
