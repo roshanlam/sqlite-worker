@@ -1,0 +1,101 @@
+name: Bug Report
+description: Report a bug or issue with sqlite-worker
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the information below to help us diagnose and fix the issue.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe what happened...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: Describe what you expected...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Initialize worker with...
+        2. Execute query...
+        3. See error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: code
+    attributes:
+      label: Code Sample
+      description: Please provide a minimal code example that reproduces the issue
+      render: python
+      placeholder: |
+        from sqlite_worker import SqliteWorker
+        worker = SqliteWorker('test.db')
+        # Your code here...
+
+  - type: textarea
+    id: error
+    attributes:
+      label: Error Message / Stack Trace
+      description: If applicable, paste the full error message or stack trace
+      render: shell
+
+  - type: input
+    id: version
+    attributes:
+      label: sqlite-worker Version
+      description: What version of sqlite-worker are you using?
+      placeholder: e.g., 1.0.0
+    validations:
+      required: true
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python Version
+      description: What version of Python are you using?
+      placeholder: e.g., 3.9.0
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating System
+      description: What operating system are you using?
+      placeholder: e.g., Ubuntu 22.04, macOS 13, Windows 11
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here (screenshots, logs, etc.)
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues to ensure this is not a duplicate
+          required: true
+        - label: I have provided a minimal code example that reproduces the issue
+          required: true
+        - label: I am using the latest version of sqlite-worker
+          required: false
