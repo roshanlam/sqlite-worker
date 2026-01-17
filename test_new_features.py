@@ -435,7 +435,7 @@ class TestInputValidation(unittest.TestCase):
     def test_invalid_column_name_insert(self):
         """Test that invalid column names are rejected in insert."""
         with self.assertRaises(ValueError):
-            self.worker.insert('test_table', {'na"me': 'test'})
+            self.worker.insert('test_table', {'name;DROP TABLE test': 'test'})
     
     def test_invalid_table_name_select(self):
         """Test that invalid table names are rejected in select."""
@@ -445,7 +445,7 @@ class TestInputValidation(unittest.TestCase):
     def test_invalid_column_name_select(self):
         """Test that invalid column names are rejected in select."""
         with self.assertRaises(ValueError):
-            self.worker.select('test_table', columns=['id', 'na"me'])
+            self.worker.select('test_table', columns=['id', 'name;DROP'])
     
     def test_invalid_order_by(self):
         """Test that invalid order_by is rejected."""
