@@ -3,7 +3,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/sqlite-worker.svg)](https://pypi.org/project/sqlite-worker/)
 [![Python versions](https://img.shields.io/pypi/pyversions/sqlite-worker.svg)](https://pypi.org/project/sqlite-worker/)
 [![License](https://img.shields.io/github/license/roshanlam/sqlite-worker.svg)](LICENSE)
-
+[![PyPI Downloads](https://static.pepy.tech/personalized-badge/sqlite-worker?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/sqlite-worker)
 Sqlite-Worker is a Python package providing a thread-safe interface for SQLite database operations. It ensures safe concurrent access to SQLite databases and simplifies executing database queries from different threads.
 
 **Perfect for:** Multi-threaded applications • Web APIs • Background workers • Data logging • Task queues
